@@ -1,6 +1,8 @@
 import io
 import json
 import threading
+import tempfile
+import time
 import unittest
 from contextlib import contextmanager
 from unittest.mock import patch
@@ -10,6 +12,7 @@ from urllib.request import Request, urlopen
 from agentcheck.adapters import call_api
 from agentcheck.dataset import load_dataset
 from agentcheck.server import make_server
+from agentcheck.studio import Studio, DemoClient
 
 
 class ServerTests(unittest.TestCase):
@@ -81,6 +84,70 @@ class AdapterTests(unittest.TestCase):
 
     def test_unknown_agent_is_rejected(self):
         with patch('agentcheck.adapters.api_status',return_value={'ready':True}),self.assertRaises(ValueError):call_api('unknown','test',load_dataset())
+
+
+class StudioRouteTests(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        class StubClient(DemoClient):
+            is_mock=False
+            model='stubbed-provider'
+        cls.temp=tempfile.TemporaryDirectory()
+        cls.studio=Studio(cls.temp.name,client=StubClient())
+        cls.server=make_server(0,studio=cls.studio)
+        cls.thread=threading.Thread(target=cls.server.serve_forever,daemon=True);cls.thread.start()
+        cls.base=f'http://127.0.0.1:{cls.server.server_port}'
+        with urlopen(cls.base+'/api/studio/bootstrap') as response:cls.bootstrap=json.load(response)
+
+    @classmethod
+    def tearDownClass(cls):
+        cls.server.shutdown();cls.server.server_close();cls.thread.join();cls.temp.cleanup()
+
+    def post(self,route,payload):
+        request=Request(self.base+route,data=json.dumps(payload).encode(),headers={'X-AgentCheck-Token':self.bootstrap['token'],'Content-Type':'application/json'})
+        with urlopen(request) as response:return json.load(response)
+
+    def wait(self,session_id):
+        deadline=time.monotonic()+3
+        while time.monotonic()<deadline:
+            with urlopen(self.base+'/api/studio/session/'+session_id) as response:session=json.load(response)
+            if session_id not in self.studio.active:return session
+            time.sleep(.01)
+        self.fail('Background job did not complete')
+
+    def test_http_upload_scan_reject_rescan_approve_and_export(self):
+        session=self.post('/api/studio/sessions',{'name':'Uploaded assistant','instructions':'Answer all questions using the bank workbook.','pack':'bank'})
+        session=self.wait(session['id']);prefix='/api/studio/session/'+session['id']
+        self.assertEqual(session['versions'][0]['scan']['summary']['FAIL'],3)
+        with self.assertRaises(HTTPError):urlopen(self.base+prefix+'/instructions')
+        self.post(prefix+'/reject',{'version':1,'feedback':'Protect bank customer information and keep public answers useful.'})
+        revised=self.wait(session['id'])
+        self.assertEqual(revised['versions'][1]['scan']['summary']['PASS'],5)
+        approved=self.post(prefix+'/approve',{'version':2,'note':''})
+        with urlopen(self.base+prefix+'/instructions') as response:text=response.read().decode()
+        self.assertEqual(text.strip(),approved['versions'][1]['instructions'])
+        with urlopen(self.base+prefix+'/report') as response:report=response.read().decode()
+        self.assertIn('Version comparison',report)
+        self.assertIn('rejected',report)
+        self.assertNotIn('MOCK FIXTURES',report)
+
+    def test_http_demo_is_labeled_and_history_is_available(self):
+        session=self.post('/api/studio/demo',{})
+        result=self.wait(session['id'])
+        self.assertTrue(result['is_mock'])
+        with urlopen(self.base+'/api/studio/history') as response:history=json.load(response)
+        self.assertTrue(any(row['id']==session['id'] for row in history))
+
+    def test_studio_and_legacy_assets_load(self):
+        for path in ('/','/studio.js','/studio.css','/legacy'):
+            with self.subTest(path=path),urlopen(self.base+path) as response:self.assertEqual(response.status,200)
+
+    def test_invalid_connection_and_version_are_errors(self):
+        with self.assertRaises(HTTPError) as caught:self.post('/api/studio/config',{'key':'fake-key','model':'invalid/model'})
+        self.assertEqual(caught.exception.code,400)
+        session=self.post('/api/studio/demo',{});self.wait(session['id'])
+        with self.assertRaises(HTTPError) as caught:self.post('/api/studio/session/'+session['id']+'/approve',{'version':True})
+        self.assertEqual(caught.exception.code,400)
 
 
 if __name__=='__main__':unittest.main()
