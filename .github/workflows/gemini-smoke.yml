@@ -1,0 +1,26 @@
+name: Live Gemini smoke test
+on:
+  push:
+    branches: [feat/prompt-scan-refine]
+    paths:
+      - agentcheck/gemini.py
+      - agentcheck/studio.py
+      - scripts/live_smoke.py
+      - .github/workflows/gemini-smoke.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  live-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Validate candidate, judge and refiner through Gemini
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GEMINI_MODEL: ${{ vars.GEMINI_MODEL || 'gemini-3.8-flash' }}
+        run: python scripts/live_smoke.py

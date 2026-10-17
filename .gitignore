@@ -6,5 +6,6 @@ __pycache__/
 !.env.example
 results/
 reports/
+sessions/
 agents/*.txt
 !agents/*.example.txt
