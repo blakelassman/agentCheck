@@ -1,8 +1,9 @@
 name: Live Gemini smoke test
 on:
   push:
-    branches: [feat/prompt-scan-refine]
+    branches: [feat/prompt-scan-refine, feat/context-uploads-shared-gemini]
     paths:
+      - agentcheck/context.py
       - agentcheck/gemini.py
       - agentcheck/studio.py
       - scripts/live_smoke.py

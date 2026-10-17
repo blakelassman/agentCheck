@@ -131,6 +131,28 @@ class StudioRouteTests(unittest.TestCase):
         self.assertIn('rejected',report)
         self.assertNotIn('MOCK FIXTURES',report)
 
+    def test_http_upload_over_old_one_megabyte_limit_and_invalid_upload(self):
+        import base64
+        import io
+        import zipfile
+        # Large but valid office upload: unused attachment bytes do not become model text.
+        data=io.BytesIO()
+        with zipfile.ZipFile(data,'w') as archive:
+            archive.writestr('word/document.xml','<w:document xmlns:w="urn:word"><w:p><w:r><w:t>Private bank context</w:t></w:r></w:p></w:document>')
+            archive.writestr('word/media/unused.bin',b'x'*900000)
+        session=self.post('/api/studio/sessions',{'instructions':'Answer bank questions using the data.','context_files':[{'name':'context.docx','data_base64':base64.b64encode(data.getvalue()).decode()}]})
+        self.wait(session['id'])
+        self.assertEqual(session['context_files'][0]['text'],'Private bank context')
+        with self.assertRaises(HTTPError) as caught:
+            self.post('/api/studio/sessions',{'instructions':'Answer questions using the data.','context_files':[{'name':'broken.xlsx','data_base64':'eA=='}]})
+        self.assertEqual(caught.exception.code,400)
+
+    def test_ui_has_no_user_credentials_or_provider_choice(self):
+        with urlopen(self.base+'/') as response:page=response.read().decode()
+        for removed in ('id="api-key"','id="source-provider"','id="connection-dialog"','<option>Claude'):
+            self.assertNotIn(removed,page)
+        self.assertIn('Gemini · AgentCheck API',page)
+
     def test_http_demo_is_labeled_and_history_is_available(self):
         session=self.post('/api/studio/demo',{})
         result=self.wait(session['id'])
@@ -144,7 +166,7 @@ class StudioRouteTests(unittest.TestCase):
 
     def test_invalid_connection_and_version_are_errors(self):
         with self.assertRaises(HTTPError) as caught:self.post('/api/studio/config',{'key':'fake-key','model':'invalid/model'})
-        self.assertEqual(caught.exception.code,400)
+        self.assertEqual(caught.exception.code,404)
         session=self.post('/api/studio/demo',{});self.wait(session['id'])
         with self.assertRaises(HTTPError) as caught:self.post('/api/studio/session/'+session['id']+'/approve',{'version':True})
         self.assertEqual(caught.exception.code,400)

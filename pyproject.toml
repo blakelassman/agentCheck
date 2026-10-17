@@ -4,8 +4,8 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "agentcheck-workbench"
-version = "0.2.0"
-description = "Evidence-first comparison of two bank assistants"
+version = "0.3.0"
+description = "Gemini instruction testing with context uploads and evidence reports"
 requires-python = ">=3.10"
 dependencies = []
 license = {text = "GPL-3.0-only"}

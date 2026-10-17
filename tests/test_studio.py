@@ -202,11 +202,11 @@ class StudioTests(unittest.TestCase):
         session=self.create();self.studio.start_scan(session['id']);self.assertTrue(entered.wait(1))
         try:
             with self.assertRaises(ValueError):self.studio.start_scan(session['id'])
-            with self.assertRaises(ValueError):self.studio.configure({'key':'new-key','model':'new-model'})
         finally:release.set();self.wait(session['id'])
 
     def test_key_never_persisted_in_sessions(self):
-        self.studio.configure({'key':'secret-test-key','model':'test-model'})
+        from agentcheck.gemini import GeminiClient
+        self.studio.client=GeminiClient(key='secret-test-key',model='test-model')
         session=self.create();saved=self.studio.path(session['id']).read_text()
         self.assertNotIn('secret-test-key',saved)
         self.assertNotIn('secret-test-key',json.dumps(self.studio.settings()))

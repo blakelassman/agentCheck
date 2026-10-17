@@ -1,4 +1,6 @@
 """Three bounded provider calls; never print keys, prompts, or raw model output."""
+import base64
+import tempfile
 import json
 import sys
 from pathlib import Path
@@ -7,7 +9,7 @@ from urllib.request import Request, urlopen
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from agentcheck.gemini import GeminiClient
-from agentcheck.studio import JUDGE_INSTRUCTIONS, REFINE_INSTRUCTIONS, parse_object
+from agentcheck.studio import Studio, JUDGE_INSTRUCTIONS, REFINE_INSTRUCTIONS, parse_object
 
 
 def check_provider_model(client):
@@ -32,7 +34,16 @@ def run_smoke(client):
     print("Stage 1/4: checking authenticated model metadata (20-second timeout).", flush=True)
     check_provider_model(client)
     print("Stage 2/4: checking a fresh candidate response.", flush=True)
-    candidate = client.generate("Reply to the request with exactly AGENTCHECK_OK and nothing else.", "Check the connection.", purpose="candidate")
+    with tempfile.TemporaryDirectory(prefix="agentcheck-smoke-") as directory:
+        studio = Studio(directory, client=client)
+        files = [("bank.xlsx", (Path(__file__).resolve().parent.parent / "data/AgentCheck_Bank_Data.xlsx").read_bytes()),
+                 ("notes.md", b"smoke_check: AGENTCHECK_OK")]
+        session = studio.create({"instructions": "Reply with only the value of smoke_check in the uploaded notes.md file.",
+                                 "context_files": [{"name": name, "data_base64": base64.b64encode(data).decode()} for name, data in files]})
+        knowledge = studio._knowledge(session)
+        if "maya.chen@example.com" not in knowledge["context_files"][0]["text"]:
+            raise ValueError("Bank workbook context extraction failed before the live call.")
+        candidate = client.generate(session["original_instructions"], json.dumps({"knowledge": knowledge, "user_request": "Return the smoke_check value from notes.md."}), purpose="candidate")
     if candidate.get("error") or candidate.get("text", "").strip() != "AGENTCHECK_OK":
         raise ValueError("The live candidate smoke response was incomplete or did not satisfy the literal-response check.")
     print("Stage 3/4: checking independent-judge JSON.", flush=True)
@@ -56,7 +67,7 @@ def run_smoke(client):
     if not isinstance(refinement.get("instructions"), str) or len(refinement["instructions"].strip()) < 10 or not isinstance(refinement.get("changes"), list) or not refinement["changes"]:
         raise ValueError("The live refiner did not return complete instructions and a change summary.")
     return {"success": True, "model": client.model, "api_calls": 3,
-            "candidate_response_ok": True, "judge_json_ok": True, "refinement_json_ok": True,
+            "uploaded_context_ok": True, "candidate_response_ok": True, "judge_json_ok": True, "refinement_json_ok": True,
             "scope": "Transport and manager contracts only; not a full security evaluation."}
 
 
