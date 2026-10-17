@@ -4,6 +4,8 @@ Upload agent instructions, test them through Gemini, and approve the result or r
 
 **Python 3.10+ is required. No package installs are needed. Live scans use AgentCheck’s server-managed Gemini API key. Users never supply credentials.** A labeled offline demo exercises the workflow without a key.
 
+Using Gemini-3.8-flash
+
 ## Start
 
 From the repository directory:
