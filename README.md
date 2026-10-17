@@ -2,7 +2,24 @@
 
 Upload agent instructions, test them through Gemini, and approve the result or reject it with feedback. Rejection creates a new prompt and automatically reruns the same tests. Download the exact instructions you approved, with an HTML evidence report.
 
-**Python 3.10+ is required. No package installs are needed. Live scans use AgentCheck’s server-managed Gemini API key. Users never supply credentials.** A labeled offline demo exercises the workflow without a key.
+**Python 3.12+ is required for hosted deployments; the local stdlib workbench also runs on Python 3.10+. No package installs are needed. Live scans use AgentCheck’s server-managed Gemini API key. Users never supply credentials.** A labeled offline demo exercises the workflow without a key.
+
+## Hosted on Vercel
+
+The hosted ASGI entrypoint is `app.py` (`app:app`). Vercel reads it from `pyproject.toml`; use the Python framework preset with Python 3.12+. The local command below still runs the stdlib workbench.
+
+Hosted scans use Vercel's Python Workflow SDK, with a separate durable step for refinement, planning and each candidate/judge pair. Model calls are not automatically retried. Session snapshots live in **private Vercel Blob**, rather than deployment disk or an instance's memory. Every update writes a new immutable object, so progress reads never use cached copies of overwritten records. An opaque HttpOnly browser cookie isolates session history between browsers. This is browser-scoped demo access, not a full account/login system; clearing cookies loses that browser's access to its saved sessions.
+
+Configure these server variables in the Vercel project for Production and Preview, then redeploy:
+
+- `GEMINI_API_KEY`: the operator's Gemini key. Enter it directly in Vercel; repository secrets cannot be read back.
+- `AGENTCHECK_SESSION_SECRET`: a randomly generated signing secret, at least 32 characters. Used only by the server.
+- `BLOB_STORE_ID`: the ID of the connected **private** Blob store. Vercel supplies OIDC credentials at runtime. If the store was created separately, connect it to the project in Storage.
+- Optional `GEMINI_MODEL`: defaults to `gemini-3.8-flash`.
+
+The hosted demo accepts up to 10 context files totaling **2 MB** to fit the function request limit; the local workbench retains its 10 MB total. Uploaded extracted text still has the same 200,000-character limit. Uploaded context and original instructions remain frozen across revisions. The legacy two-agent workbench is local-only.
+
+For local hosted-runtime testing: `uv sync`, then `uv run uvicorn app:app --port 8765`. Use the injected storage/transport fixtures in `tests/test_hosted.py` for tests without provider credentials. Vercel's own deployment protection settings remain in effect.
 
 ## Start
 
