@@ -100,6 +100,14 @@ class HostedTests(unittest.TestCase):
         self.assertEqual(len(self.transport.calls),count)
         with self.assertRaises(ValueError):execute_stage(owner,session['id'],'stale-job','case:1',store=self.store,client=self.transport)
 
+    def test_workflow_module_imports_inside_the_real_sdk_sandbox(self):
+        import importlib
+        from agentcheck.hosted_jobs import wf
+        with wf._get_sandbox() as sandbox:
+            with sandbox.enter():
+                module=importlib.import_module('agentcheck.hosted_jobs')
+                self.assertTrue(hasattr(module,'scan_workflow'))
+
     def test_missing_signing_configuration_blocks_operations(self):
         with patch.dict(os.environ,{'AGENTCHECK_SESSION_SECRET':''}):
             self.assertFalse(self.browser.get('/api/studio/bootstrap').json()['config']['ready'])

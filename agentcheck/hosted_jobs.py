@@ -4,14 +4,16 @@ import logging
 
 from vercel import workflow
 
-from .hosted_store import HostedStudio
-from .studio import DemoClient
 
 logger = logging.getLogger(__name__)
 wf = workflow.Workflows(sandbox_policy=workflow.SandboxPolicy(share_sandboxes=True))
 
 
 def execute_stage(owner, session_id, job_id, stage, *, store=None, client=None):
+    # Keep filesystem/network imports outside the deterministic workflow sandbox.
+    from .hosted_store import HostedStudio
+    from .studio import DemoClient
+
     studio = HostedStudio(owner, store=store, client=client)
     session = studio.get(session_id)
     job = session.get('host_job', {})
