@@ -31,7 +31,10 @@ function render(){
   $('step-upload').classList.remove('active');$('step-scan').classList.toggle('active',active());$('step-decide').classList.toggle('active',!active());
   $('progress-panel').hidden=!active();
   $('progress-title').textContent=session.state==='refining'?'Refining instructions from your feedback…':'Running the test suite…';
-  $('progress-description').textContent=session.state==='refining'?'The new version will automatically run the same tests.':`${latest.scan.results.length} of ${session.cases.length||6} cases recorded. Each test uses a fresh conversation.`;
+  const phases={candidate:'Waiting for the Gemini agent response',judge:'Evaluating the response with Gemini',plan:'Generating the test plan',refine:'Refining the instructions'};
+  const phase=phases[session.progress?.purpose]||'Preparing the next test';
+  const elapsed=session.progress?.started_at?Math.max(0,Math.floor((Date.now()-Date.parse(session.progress.started_at))/1000)):0;
+  $('progress-description').textContent=`${phase}${elapsed?' · '+elapsed+'s':''}. ${latest.scan.results.length} of ${session.cases.length||6} cases recorded.`;
   $('stat-version').textContent=version.number;$('stat-pass').textContent=scan.summary.PASS||0;$('stat-fail').textContent=scan.summary.FAIL||0;
   $('stat-attention').textContent=(scan.summary.ERROR||0)+(scan.summary.REVIEW||0);$('stat-progress').textContent=`${scan.results.length} / ${session.cases.length||6}`;
   $('results-title').textContent=`Version ${version.number} test results`;$('version-state').textContent=(version.decision?.status||scan.status).replaceAll('_',' ').toUpperCase();
@@ -88,10 +91,10 @@ async function history(){clearTimeout(state.poll);show('history');const sessions
 function updatePack(){const bank=$('test-pack').value==='bank';$('bank-note').hidden=!bank;$('scan-estimate').textContent=bank?'One scan · 5 tests · up to 10 Gemini calls':'First scan · 6 tests · up to 13 Gemini calls';}
 async function loadFile(input,target,max){const file=input.files[0];input.value='';if(!file)return;if(file.size>max*4)throw new Error('File is too large. Use plain text up to '+max+' characters.');const text=await file.text();if(text.length>max||text.includes('\u0000'))throw new Error('Use a plain UTF-8 text file within the character limit.');$(target).value=text;if(target==='instructions'){$('instruction-name').textContent=file.name;$('character-count').textContent=text.length.toLocaleString()+' characters';}}
 async function boot(){try{
-  state.bootstrap=await api('/api/studio/bootstrap');$('expected-policy').value=state.bootstrap.default_policy;connection();
+  state.bootstrap=await api('/api/studio/bootstrap');if(state.bootstrap.config.hosted)$('context-limit').textContent='Excel (.xlsx), Word (.docx), Markdown, text, CSV and JSON. Up to 10 files, 2 MB total on the hosted demo. Text and table values are extracted; images and formatting are not sent.';$('expected-policy').value=state.bootstrap.default_policy;connection();
   $('instructions').addEventListener('input',()=>{$('character-count').textContent=$('instructions').value.length.toLocaleString()+' characters';});
   $('instruction-file').addEventListener('change',event=>loadFile(event.target,'instructions',100000).catch(error=>toast(error.message,true)));
-  $('context-file').addEventListener('change',event=>{const incoming=[...event.target.files],combined=[...state.files,...incoming];event.target.value='';if(combined.length>10||combined.some(file=>file.size>5*1024*1024)||combined.reduce((sum,file)=>sum+file.size,0)>10*1024*1024){toast('Upload up to 10 files, 5 MB per file and 10 MB total.',true);return;}state.files=combined;renderFiles();});
+  $('context-file').addEventListener('change',event=>{const incoming=[...event.target.files],combined=[...state.files,...incoming];event.target.value='';if(combined.length>10||combined.some(file=>file.size>(state.bootstrap.uploads?.max_file_bytes||5*1024*1024))||combined.reduce((sum,file)=>sum+file.size,0)>(state.bootstrap.uploads?.max_total_bytes||10*1024*1024)){toast(state.bootstrap.config.hosted?'Upload up to 10 files, 2 MB total on the hosted demo.':'Upload up to 10 files, 5 MB per file and 10 MB total.',true);return;}state.files=combined;renderFiles();});
   $('test-pack').addEventListener('change',updatePack);
   $('upload-form').addEventListener('submit',async event=>{event.preventDefault();if(!state.bootstrap.config.ready){toast('Gemini is temporarily unavailable. The AgentCheck operator needs to configure the server connection.',true);return;}setBusy(true);try{
     state.session=await api('/api/studio/sessions',{name:$('agent-name').value,instructions:$('instructions').value,pack:$('test-pack').value,policy:$('expected-policy').value,context:$('knowledge-context').value,context_files:await attachments()});state.version=1;$('feedback').value='';remember();render();beginPolling();

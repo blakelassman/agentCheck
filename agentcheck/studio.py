@@ -198,9 +198,12 @@ class Studio:
             self.active.add(session_id)
             self._save(session)
             client = DemoClient() if session["is_mock"] else self.client
-            thread = threading.Thread(target=self._worker, args=(session_id, operation, feedback, client), daemon=True)
-            thread.start()
+            self._launch(session_id, operation, feedback, client)
             return deepcopy(session)
+
+    def _launch(self, session_id, operation, feedback, client):
+        thread = threading.Thread(target=self._worker, args=(session_id, operation, feedback, client), daemon=True)
+        thread.start()
 
     def start_scan(self, session_id):
         return self._start(session_id, "scan")
@@ -215,6 +218,8 @@ class Studio:
         session.setdefault("provider_calls", []).append({"purpose": purpose, "version": version, "model": client.model, "mock": client.is_mock, "at": now()})
         if session["versions"][-1]["scan"]["status"] == "running":
             session["versions"][-1]["scan"]["calls"] += 1
+        session["progress"] = {"purpose": purpose, "started_at": now()}
+        self._save(session)
         reply = client.generate(instructions, json.dumps(payload, ensure_ascii=False), purpose=purpose, version=version, json_output=json_output)
         return reply
 
@@ -282,50 +287,65 @@ class Studio:
         return {"evaluation_status": judgment["status"], "reason": reason, "evidence": [{"field": "response_quote", "excerpt": q} for q in quotes],
                 "method": "independent_model", "judge_model": reply["model"], "judge_latency_ms": reply["latency_ms"], "rule_result": rule}
 
+    def _refine(self, session, feedback, client):
+        prior = session["versions"][-1]
+        reply = self._call(session, client, REFINE_INSTRUCTIONS, {"expected_behavior_policy": session["policy"],
+                           "original_instructions": session["original_instructions"], "current_instructions": prior["instructions"],
+                           "operator_feedback": feedback, "test_results": prior["scan"]["results"]}, "refine", prior["number"], True)
+        refined = parse_object(reply)
+        instructions = bounded_text(refined.get("instructions"), "Refined instructions", minimum=10)
+        changes = refined.get("changes")
+        if not isinstance(changes, list) or not 1 <= len(changes) <= 8 or any(not isinstance(x, str) or not 1 <= len(x) <= 500 for x in changes):
+            raise ValueError("Refinement must include one to eight specific changes.")
+        if digest(instructions) == prior["instructions_sha256"]:
+            raise ValueError("The refiner returned unchanged instructions. No new version was created.")
+        if session["canary"] in instructions or (session["pack"] == "bank" and confidential_matches(instructions, "", self.dataset)):
+            raise ValueError("The refiner embedded confidential test data in the instructions. The revision was rejected.")
+        session["versions"].append(version_record(prior["number"]+1, instructions, changes))
+        session["events"].append({"type": "revised", "version": prior["number"]+1, "at": now()})
+
+    def _initialize_scan(self, session, client):
+        version = session["versions"][-1]
+        session["state"] = "scanning"
+        version["scan"] = {"status": "running", "started_at": now(), "model": client.model, "results": [], "summary": {},
+                           "calls": 0, "suite_sha256": digest(json.dumps(session["cases"], sort_keys=True))}
+        self._save(session)
+
+    def _test_one(self, session, case, client):
+        version = session["versions"][-1]
+        knowledge = self._knowledge(session)
+        row = {"test_id": case["id"], "title": case["title"], "category": case["category"], "user_prompt": case["prompt"],
+               "expected_behavior": case["expected"], "raw_response": "", "model": client.model, "latency_ms": None}
+        try:
+            response = self._call(session, client, version["instructions"], {"knowledge": knowledge, "user_request": case["prompt"]}, "candidate", version["number"])
+            row.update(raw_response=response["text"], model=response["model"], latency_ms=response["latency_ms"])
+            row.update(self._judge(session, version["number"], case, response, client))
+        except ValueError as error:
+            row.update(evaluation_status="ERROR", reason=str(error), evidence=[], method="execution")
+        version["scan"]["results"].append(row)
+        version["scan"]["summary"] = {status: sum(r["evaluation_status"] == status for r in version["scan"]["results"]) for status in ("PASS", "FAIL", "ERROR", "REVIEW")}
+        self._save(session)
+
+    def _complete_scan(self, session):
+        version = session["versions"][-1]
+        version["scan"].update(status="completed", completed_at=now())
+        session["state"] = "ready"
+        session["progress"] = None
+        session["events"].append({"type": "scan_completed", "version": version["number"], "at": now()})
+        self._save(session)
+
     def _worker(self, session_id, operation, feedback, client):
         try:
             with self.lock:
                 session = self._read(session_id)
             if operation == "refine":
-                prior = session["versions"][-1]
-                reply = self._call(session, client, REFINE_INSTRUCTIONS, {"expected_behavior_policy": session["policy"],
-                                   "original_instructions": session["original_instructions"], "current_instructions": prior["instructions"],
-                                   "operator_feedback": feedback, "test_results": prior["scan"]["results"]}, "refine", prior["number"], True)
-                refined = parse_object(reply)
-                instructions = bounded_text(refined.get("instructions"), "Refined instructions", minimum=10)
-                changes = refined.get("changes")
-                if not isinstance(changes, list) or not 1 <= len(changes) <= 8 or any(not isinstance(x, str) or not 1 <= len(x) <= 500 for x in changes):
-                    raise ValueError("Refinement must include one to eight specific changes.")
-                if digest(instructions) == prior["instructions_sha256"]:
-                    raise ValueError("The refiner returned unchanged instructions. No new version was created.")
-                if session["canary"] in instructions or (session["pack"] == "bank" and confidential_matches(instructions, "", self.dataset)):
-                    raise ValueError("The refiner embedded confidential test data in the instructions. The revision was rejected.")
-                session["versions"].append(version_record(prior["number"]+1, instructions, changes))
-                session["events"].append({"type": "revised", "version": prior["number"]+1, "at": now()})
+                self._refine(session, feedback, client)
             if not session["cases"]:
                 self._plan(session, client)
-            version = session["versions"][-1]
-            session["state"] = "scanning"
-            version["scan"] = {"status": "running", "started_at": now(), "model": client.model, "results": [], "summary": {},
-                               "calls": 0, "suite_sha256": digest(json.dumps(session["cases"], sort_keys=True))}
-            self._save(session)
-            knowledge = self._knowledge(session)
+            self._initialize_scan(session, client)
             for case in session["cases"]:
-                row = {"test_id": case["id"], "title": case["title"], "category": case["category"], "user_prompt": case["prompt"],
-                       "expected_behavior": case["expected"], "raw_response": "", "model": client.model, "latency_ms": None}
-                try:
-                    response = self._call(session, client, version["instructions"], {"knowledge": knowledge, "user_request": case["prompt"]}, "candidate", version["number"])
-                    row.update(raw_response=response["text"], model=response["model"], latency_ms=response["latency_ms"])
-                    row.update(self._judge(session, version["number"], case, response, client))
-                except ValueError as error:
-                    row.update(evaluation_status="ERROR", reason=str(error), evidence=[], method="execution")
-                version["scan"]["results"].append(row)
-                version["scan"]["summary"] = {status: sum(r["evaluation_status"] == status for r in version["scan"]["results"]) for status in ("PASS", "FAIL", "ERROR", "REVIEW")}
-                self._save(session)
-            version["scan"].update(status="completed", completed_at=now())
-            session["state"] = "ready"
-            session["events"].append({"type": "scan_completed", "version": version["number"], "at": now()})
-            self._save(session)
+                self._test_one(session, case, client)
+            self._complete_scan(session)
         except (ValueError, OSError, KeyError, TypeError) as error:
             with self.lock:
                 session = self._read(session_id)

@@ -43,7 +43,14 @@ class GeminiClient:
                 result["error"] = "The model response was empty, blocked or incomplete. Partial output is retained."
             return result
         except HTTPError as error:
-            raise ValueError(f"Gemini returned HTTP {error.code}. Check the model, credentials, quota and account access.") from None
+            messages = {
+                503: "Gemini is temporarily unavailable (HTTP 503). No agent answer was received; this is an execution error. Rescan later.",
+                429: "Gemini quota or rate limit reached (HTTP 429). Wait or check the Gemini project's quota before rescanning.",
+                401: "Gemini rejected the server API key (HTTP 401). The operator must check GEMINI_API_KEY.",
+                403: "Gemini denied access (HTTP 403). The operator must check the key's project and model permissions.",
+                404: "The configured Gemini model was not found (HTTP 404). The operator must check GEMINI_MODEL."
+            }
+            raise ValueError(messages.get(error.code, f"Gemini returned HTTP {error.code}. Check the model and server configuration.")) from None
         except (URLError, TimeoutError, OSError):
             raise ValueError("Gemini connection failed or timed out.") from None
         except (ValueError, TypeError, AttributeError, IndexError):
