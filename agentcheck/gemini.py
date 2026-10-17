@@ -12,7 +12,7 @@ class GeminiClient:
 
     def __init__(self, key=None, model=None):
         self.key = key if key is not None else os.environ.get("GEMINI_API_KEY", "")
-        self.model = model if model is not None else os.environ.get("GEMINI_MODEL", "")
+        self.model = model if model is not None else os.environ.get("GEMINI_MODEL", "gemini-3.8-flash")
 
     @property
     def ready(self):
@@ -20,7 +20,7 @@ class GeminiClient:
 
     def generate(self, instructions, user_input, *, json_output=False, purpose="candidate", version=1):
         if not self.ready:
-            raise ValueError("Configure a Gemini API key and model in Connection setup before running a live scan.")
+            raise ValueError("Gemini is unavailable. The server operator must configure GEMINI_API_KEY.")
         config = {"maxOutputTokens": 8192 if purpose in ("refine", "plan") else 4096}
         if json_output:
             config["responseMimeType"] = "application/json"

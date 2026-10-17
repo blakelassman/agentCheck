@@ -2,7 +2,7 @@
 
 Upload agent instructions, test them through Gemini, and approve the result or reject it with feedback. Rejection creates a new prompt and automatically reruns the same tests. Download the exact instructions you approved, with an HTML evidence report.
 
-**Python 3.10+ is required. No package installs are needed. Live scans require a Gemini API key and a compatible model available to your account.** A labeled offline demo exercises the workflow without a key.
+**Python 3.10+ is required. No package installs are needed. Live scans use AgentCheck’s server-managed Gemini API key. Users never supply credentials.** A labeled offline demo exercises the workflow without a key.
 
 ## Start
 
@@ -18,8 +18,8 @@ Windows can use `py`; macOS/Linux can use `python3`. Open **http://127.0.0.1:876
 
 ## Test your instructions
 
-1. Open **Connect Gemini** and enter a key and model identifier locally. The key stays in server memory until the app stops. It is not written to sessions, browser storage or Git. Setup validates fields; the first scan verifies actual provider access.
-2. Paste instructions or upload a UTF-8 `.txt` or `.md` file. The intended platform field is metadata, not a connection to that platform.
+1. The AgentCheck operator configures `GEMINI_API_KEY` on the server before launching. End users simply open the app; no key-entry screen or provider selection is shown.
+2. Paste instructions or upload a UTF-8 `.txt` or `.md` file. Add context files alongside them: Excel `.xlsx`, Word `.docx`, Markdown, UTF-8 text, CSV/TSV and JSON. Files are available in both test suites and remain attached across revisions.
 3. Choose the fixed bank suite or generated tests for your task. Define an **expected behavior policy** separately from the uploaded instructions. This is the grading standard even when the prompt conflicts with it.
 4. Choose **Create agent and run tests**. Every test makes a fresh, stateless Gemini request with the uploaded instructions as the candidate's system instructions. No agent is deployed and no existing web Gem is invoked.
 5. Inspect each prompt, expected behavior, full response, grade, reason and evidence. No manual response uploads are required.
@@ -30,7 +30,7 @@ During live operations, instructions, knowledge, responses and feedback are sent
 
 ### Environment configuration
 
-You can set credentials before launching instead of entering them in the UI.
+The operator sets credentials before launching. The shared key never goes to the browser or session files. There is no endpoint for end users to change credentials.
 
 PowerShell:
 
@@ -48,13 +48,23 @@ export GEMINI_MODEL="YOUR_APPROVED_MODEL_ID"
 python3 -m agentcheck serve
 ```
 
-Choose a Gemini model supporting `generateContent`, system instructions and JSON mode. Candidate responses preserve the uploaded prompt's format. Only the planner, judge and refiner request JSON. `.env` files are not loaded automatically. No key or model is bundled, and Gemma compatibility is not promised.
+Choose a Gemini model supporting `generateContent`, system instructions and JSON mode. Candidate responses preserve the uploaded prompt's format. Only the planner, judge and refiner request JSON. `.env` files are not loaded automatically. No key is bundled. The default model is `gemini-3.8-flash`; the operator can override it with `GEMINI_MODEL`.
 
 ### Repository secret and live smoke test
 
-The `Live Gemini smoke test` Actions workflow references the repository secret `GEMINI_API_KEY`. It performs three bounded API calls to check candidate text, independent-judge JSON and refinement JSON. It never prints the key, raw prompts or model output. A successful smoke test verifies connectivity and response contracts, not the full evaluation's security claims.
+The `Live Gemini smoke test` Actions workflow references the repository secret `GEMINI_API_KEY`. It extracts the bank Excel workbook and a Markdown file, then performs three bounded API calls to check a candidate answer from that uploaded context, independent-judge JSON and refinement JSON. It never prints the key, raw prompts or model output. A successful smoke test verifies connectivity and response contracts, not the full evaluation's security claims.
 
-Set the nonsecret repository variable `GEMINI_MODEL` to change the smoke-test model. The workflow defaults to `gemini-3.8-flash`. It runs for relevant pushes to the feature branch and can be started manually from Actions once available on the default branch. GitHub Actions secrets do not automatically configure a locally launched application or a separate deployment; those runtimes need their own environment setting or the local Connection setup form.
+Set the nonsecret repository variable `GEMINI_MODEL` to change the smoke-test model. The workflow defaults to `gemini-3.8-flash`. It runs for relevant pushes to the feature branch and can be started manually from Actions once available on the default branch. GitHub Actions secrets do not automatically configure a locally launched application or a separate deployment; those runtimes need their own environment setting supplied by the operator. A repository secret cannot be read back by the app; deployment must explicitly inject `${{ secrets.GEMINI_API_KEY }}` into the backend environment. The existing Actions workflow already does this for its live smoke test.
+
+### Context files
+
+Upload up to 10 files, 5 MB per file and 10 MB total, with at most 200,000 extracted characters combined. Notes allow another 100,000 characters. Extraction uses text and table values; it does not execute macros, formulas or uploaded code. Excel formulas use saved results, or show an explicit missing-result marker. Word extraction covers body paragraphs and tables. Images, formatting, Word headers/footers and scanned-image OCR are not included. Password-protected documents are unsupported.
+
+Optional PDF extraction requires `pdftotext` (Poppler); legacy binary `.doc` requires `antiword` on the server. Without those tools, the app explains how to convert to `.docx` or `.txt`. On Debian/Ubuntu, the operator can install both with `sudo apt-get install poppler-utils antiword`. Modern `.docx` and `.xlsx` need no additional packages.
+
+Each session freezes the extracted text, filename, original byte count and SHA256. Candidates, generated-test planners and independent judges receive that same context. The interface and HTML report list uploaded files and fingerprints. No file is silently discarded or truncated. Context files can contain instructions, so the expected behavior policy remains the independent grading authority.
+
+For the bank demonstration, upload `data/AgentCheck_Bank_Data.xlsx`. The fixed bank suite always includes its bundled, known workbook; uploads are additional knowledge. Select **Your task** when testing a different bank workbook or other custom context, so the generated tests use that material rather than the demo’s fixed answers.
 
 ## Test suites
 

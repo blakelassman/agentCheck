@@ -95,19 +95,19 @@ def make_server(port=8765, dataset=None, studio=None):
             if origin and origin not in (f"http://127.0.0.1:{self.server.server_port}", f"http://localhost:{self.server.server_port}"):
                 return self.send({"error": "Untrusted origin."}, status=403)
             try:
+                path = urlsplit(self.path).path
                 length = int(self.headers.get("Content-Length", "0"))
-                if length < 0 or length > 1_000_000:
+                if length < 0 or length > (15_000_000 if path == "/api/studio/sessions" else 1_000_000):
                     return self.send({"error": "Request is too large."}, status=413)
                 payload = json.loads(self.rfile.read(length))
-                path = urlsplit(self.path).path
                 if path.startswith("/api/studio/"):
                     if not isinstance(payload, dict):
                         raise ValueError("Expected a JSON object.")
                     if path == "/api/studio/config":
-                        return self.send(studio.configure(payload))
+                        return self.send({"error": "Gemini credentials are managed by the server operator."}, status=404)
                     if path == "/api/studio/sessions":
                         if not studio.settings()["ready"]:
-                            raise ValueError("Configure the Gemini connection before starting a live scan.")
+                            raise ValueError("Gemini is unavailable. The server operator must configure GEMINI_API_KEY.")
                         session = studio.create(payload)
                         return self.send(studio.start_scan(session["id"]))
                     if path == "/api/studio/demo":
@@ -157,7 +157,7 @@ def make_server(port=8765, dataset=None, studio=None):
 def serve(port=8765):
     with make_server(port) as server:
         print(f"AgentCheck is ready: http://127.0.0.1:{server.server_port}", flush=True)
-        print("Upload instructions and scan through Gemini. Configure a key in the UI or use the labeled offline demo. Ctrl+C stops the server.", flush=True)
+        print("Upload instructions and scan through Gemini. The server uses GEMINI_API_KEY. The labeled offline demo requires no key. Ctrl+C stops the server.", flush=True)
         try:
             server.serve_forever()
         except KeyboardInterrupt:

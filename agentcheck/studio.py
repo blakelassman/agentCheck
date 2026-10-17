@@ -7,6 +7,7 @@ from copy import deepcopy
 from pathlib import Path
 from uuid import uuid4
 
+from .context import parse_uploads
 from .dataset import ROOT, agent_context, load_cases, load_dataset
 from .evaluator import confidential_matches, evaluate
 from .gemini import GeminiClient
@@ -89,17 +90,6 @@ class Studio:
     def settings(self):
         return {"ready": self.client.ready, "model": self.client.model or "Not configured", "active_jobs": len(self.active)}
 
-    def configure(self, payload):
-        with self.lock:
-            if self.active:
-                raise ValueError("Wait for active scans to finish before changing the connection.")
-            model = bounded_text(payload.get("model"), "Model", maximum=120)
-            key = bounded_text(payload.get("key"), "API key", maximum=300)
-            if not re.fullmatch(r"[A-Za-z0-9._-]+", model):
-                raise ValueError("Use a Gemini model identifier without slashes.")
-            self.client = GeminiClient(key, model)
-            return self.settings()
-
     def path(self, session_id):
         if not isinstance(session_id, str) or not re.fullmatch(r"[a-f0-9]{32}", session_id):
             raise ValueError("Invalid session identifier.")
@@ -151,10 +141,12 @@ class Studio:
         context = payload.get("context", "")
         if not isinstance(context, str) or len(context) > 100_000:
             raise ValueError("Knowledge context must be text with at most 100000 characters.")
+        context_files = parse_uploads(payload.get("context_files", []))
         canary = CANARY_PREFIX + uuid4().hex
         session = {"schema_version": 2, "id": uuid4().hex, "name": name, "created_at": now(), "updated_at": now(),
                    "state": "draft", "is_mock": mock, "pack": pack, "policy": policy, "context": context,
-                   "original_instructions": instructions, "source_provider": str(payload.get("source_provider", "Unspecified"))[:100],
+                   "original_instructions": instructions, "source_provider": "Gemini", "context_files": context_files,
+                   "context_sha256": digest(json.dumps({"notes": context, "files": context_files}, sort_keys=True)),
                    "canary": canary, "dataset_version": self.dataset["version"] if pack == "bank" else "user-context-v1",
                    "dataset_sha256": self.dataset["sha256"] if pack == "bank" else digest(context),
                    "versions": [version_record(1, instructions)], "cases": load_cases() if pack == "bank" else [],
@@ -166,8 +158,10 @@ class Studio:
         if session["pack"] == "bank":
             if session["dataset_sha256"] != self.dataset["sha256"]:
                 raise ValueError("The workbook changed after this session was created. Create a new session.")
-            return json.loads(agent_context(self.dataset))
-        return {"user_context": session["context"], "confidential_test_fixture": {"classification": "CONFIDENTIAL", "synthetic_secret": session["canary"]}}
+            knowledge = json.loads(agent_context(self.dataset))
+            knowledge.update(user_context=session["context"], context_files=session.get("context_files", []))
+            return knowledge
+        return {"user_context": session["context"], "context_files": session.get("context_files", []), "confidential_test_fixture": {"classification": "CONFIDENTIAL", "synthetic_secret": session["canary"]}}
 
     def _start(self, session_id, operation, feedback=None, expected_version=None):
         with self.lock:
@@ -180,7 +174,7 @@ class Studio:
             if session["accepted_version"] is not None:
                 raise ValueError("This session is approved. Create a new session to change it.")
             if not session["is_mock"] and not self.client.ready:
-                raise ValueError("Configure a Gemini API key and model before running a live scan.")
+                raise ValueError("Gemini is unavailable. The server operator must configure GEMINI_API_KEY.")
             self._knowledge(session)
             if operation == "scan" and version["scan"]["status"] == "completed":
                 raise ValueError("This version already has a completed scan. Approve or reject it to continue.")
