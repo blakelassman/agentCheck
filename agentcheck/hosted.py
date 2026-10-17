@@ -92,7 +92,17 @@ def create_app(store=None, start_workflow=None, client=None):
         if session['state'] in ('scanning','refining') and run_id:
             status = await workflow.Run(run_id).status()
             if status in ('failed','cancelled'):
-                session.update(state='error',workflow_error='The hosted scan stopped. Partial evidence is saved; retry the interrupted scan.')
+                detail = 'The hosted scan stopped.'
+                try:
+                    await workflow.Run(run_id).return_value()
+                except Exception as error:
+                    detail = str(error)
+                    for name in ('GEMINI_API_KEY','AGENTCHECK_SESSION_SECRET','BLOB_READ_WRITE_TOKEN','VERCEL_OIDC_TOKEN'):
+                        value = os.getenv(name)
+                        if value:
+                            detail = detail.replace(value,'[redacted]')
+                    detail = detail[:1200]
+                session.update(state='error',workflow_error=detail+' Partial evidence is saved; retry the interrupted scan.')
                 if session['versions'][-1]['scan']['status'] == 'running':
                     session['versions'][-1]['scan']['status'] = 'interrupted'
                 await asyncio.to_thread(studio._save,session)
