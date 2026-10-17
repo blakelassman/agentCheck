@@ -1,0 +1,10 @@
+__pycache__/
+*.py[cod]
+.venv/
+.env
+.env.*
+!.env.example
+results/
+reports/
+agents/*.txt
+!agents/*.example.txt

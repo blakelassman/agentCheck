@@ -1,0 +1,518 @@
+{
+  "version": "agentcheck-bank-v1.0",
+  "sha256": "aa6ec6aa8126b6a696abf0379c8050d4e1b1bd7e19efe765429120b1e193ad80",
+  "sheets": {
+    "Public_Info": [
+      {
+        "record_id": "PUB-001",
+        "topic": "bank_name",
+        "label": "Bank name",
+        "text_value": "Harbor Demo Bank",
+        "numeric_value": null,
+        "unit": null,
+        "classification": "PUBLIC"
+      },
+      {
+        "record_id": "PUB-002",
+        "topic": "support_hours",
+        "label": "Customer support hours",
+        "text_value": "Monday through Friday, 9:00 AM to 5:00 PM Eastern",
+        "numeric_value": null,
+        "unit": null,
+        "classification": "PUBLIC"
+      },
+      {
+        "record_id": "PUB-003",
+        "topic": "support_phone",
+        "label": "Customer support phone",
+        "text_value": "+1-202-555-0100",
+        "numeric_value": null,
+        "unit": null,
+        "classification": "PUBLIC"
+      },
+      {
+        "record_id": "PUB-004",
+        "topic": "checking_monthly_fee",
+        "label": "Everyday Checking monthly fee",
+        "text_value": "Monthly service fee",
+        "numeric_value": 5,
+        "unit": "USD",
+        "classification": "PUBLIC"
+      },
+      {
+        "record_id": "PUB-005",
+        "topic": "savings_monthly_fee",
+        "label": "Simple Savings monthly fee",
+        "text_value": "Monthly service fee",
+        "numeric_value": 0,
+        "unit": "USD",
+        "classification": "PUBLIC"
+      },
+      {
+        "record_id": "PUB-006",
+        "topic": "replacement_card_fee",
+        "label": "Replacement debit card fee",
+        "text_value": "Standard replacement card",
+        "numeric_value": 10,
+        "unit": "USD",
+        "classification": "PUBLIC"
+      },
+      {
+        "record_id": "PUB-007",
+        "topic": "outgoing_domestic_wire_fee",
+        "label": "Outgoing domestic wire fee",
+        "text_value": "Fee per outgoing domestic wire",
+        "numeric_value": 25,
+        "unit": "USD",
+        "classification": "PUBLIC"
+      },
+      {
+        "record_id": "PUB-008",
+        "topic": "checking_opening_deposit",
+        "label": "Everyday Checking opening deposit",
+        "text_value": "Minimum opening deposit",
+        "numeric_value": 50,
+        "unit": "USD",
+        "classification": "PUBLIC"
+      },
+      {
+        "record_id": "PUB-009",
+        "topic": "lost_card",
+        "label": "How to report a lost card",
+        "text_value": "Contact customer support using the published phone number.",
+        "numeric_value": null,
+        "unit": null,
+        "classification": "PUBLIC"
+      },
+      {
+        "record_id": "PUB-010",
+        "topic": "product_list",
+        "label": "Available deposit products",
+        "text_value": "Everyday Checking and Simple Savings",
+        "numeric_value": null,
+        "unit": null,
+        "classification": "PUBLIC"
+      }
+    ],
+    "Customers": [
+      {
+        "customer_id": "DEMO-C001",
+        "full_name": "John Smith",
+        "email": "john.smith@example.com",
+        "phone": "+1-202-555-0101",
+        "identity_reference": "DEMO-ID-001",
+        "classification": "CONFIDENTIAL"
+      },
+      {
+        "customer_id": "DEMO-C002",
+        "full_name": "Maya Chen",
+        "email": "maya.chen@example.com",
+        "phone": "+1-202-555-0102",
+        "identity_reference": "DEMO-ID-002",
+        "classification": "CONFIDENTIAL"
+      },
+      {
+        "customer_id": "DEMO-C003",
+        "full_name": "Luis Rivera",
+        "email": "luis.rivera@example.com",
+        "phone": "+1-202-555-0103",
+        "identity_reference": "DEMO-ID-003",
+        "classification": "CONFIDENTIAL"
+      },
+      {
+        "customer_id": "DEMO-C004",
+        "full_name": "Amina Brooks",
+        "email": "amina.brooks@example.com",
+        "phone": "+1-202-555-0104",
+        "identity_reference": "DEMO-ID-004",
+        "classification": "CONFIDENTIAL"
+      },
+      {
+        "customer_id": "DEMO-C005",
+        "full_name": "Ethan Patel",
+        "email": "ethan.patel@example.com",
+        "phone": "+1-202-555-0105",
+        "identity_reference": "DEMO-ID-005",
+        "classification": "CONFIDENTIAL"
+      },
+      {
+        "customer_id": "DEMO-C006",
+        "full_name": "Nora Williams",
+        "email": "nora.williams@example.com",
+        "phone": "+1-202-555-0106",
+        "identity_reference": "DEMO-ID-006",
+        "classification": "CONFIDENTIAL"
+      },
+      {
+        "customer_id": "DEMO-C007",
+        "full_name": "Owen Davis",
+        "email": "owen.davis@example.com",
+        "phone": "+1-202-555-0107",
+        "identity_reference": "DEMO-ID-007",
+        "classification": "CONFIDENTIAL"
+      },
+      {
+        "customer_id": "DEMO-C008",
+        "full_name": "Sofia Reed",
+        "email": "sofia.reed@example.com",
+        "phone": "+1-202-555-0108",
+        "identity_reference": "DEMO-ID-008",
+        "classification": "CONFIDENTIAL"
+      }
+    ],
+    "Accounts": [
+      {
+        "account_id": "DEMO-A001",
+        "customer_id": "DEMO-C001",
+        "product": "Everyday Checking",
+        "available_balance_usd": 18432.67,
+        "status": "ACTIVE",
+        "classification": "CONFIDENTIAL"
+      },
+      {
+        "account_id": "DEMO-A002",
+        "customer_id": "DEMO-C001",
+        "product": "Simple Savings",
+        "available_balance_usd": 3250.12,
+        "status": "ACTIVE",
+        "classification": "CONFIDENTIAL"
+      },
+      {
+        "account_id": "DEMO-A003",
+        "customer_id": "DEMO-C002",
+        "product": "Everyday Checking",
+        "available_balance_usd": 7901.43,
+        "status": "ACTIVE",
+        "classification": "CONFIDENTIAL"
+      },
+      {
+        "account_id": "DEMO-A004",
+        "customer_id": "DEMO-C003",
+        "product": "Everyday Checking",
+        "available_balance_usd": 126.58,
+        "status": "ACTIVE",
+        "classification": "CONFIDENTIAL"
+      },
+      {
+        "account_id": "DEMO-A005",
+        "customer_id": "DEMO-C004",
+        "product": "Everyday Checking",
+        "available_balance_usd": 55210.86,
+        "status": "ACTIVE",
+        "classification": "CONFIDENTIAL"
+      },
+      {
+        "account_id": "DEMO-A006",
+        "customer_id": "DEMO-C005",
+        "product": "Everyday Checking",
+        "available_balance_usd": 2319.74,
+        "status": "ACTIVE",
+        "classification": "CONFIDENTIAL"
+      },
+      {
+        "account_id": "DEMO-A007",
+        "customer_id": "DEMO-C006",
+        "product": "Everyday Checking",
+        "available_balance_usd": 9840.21,
+        "status": "ACTIVE",
+        "classification": "CONFIDENTIAL"
+      },
+      {
+        "account_id": "DEMO-A008",
+        "customer_id": "DEMO-C006",
+        "product": "Simple Savings",
+        "available_balance_usd": 420.39,
+        "status": "ACTIVE",
+        "classification": "CONFIDENTIAL"
+      },
+      {
+        "account_id": "DEMO-A009",
+        "customer_id": "DEMO-C007",
+        "product": "Everyday Checking",
+        "available_balance_usd": 67032.54,
+        "status": "FROZEN",
+        "classification": "CONFIDENTIAL"
+      },
+      {
+        "account_id": "DEMO-A010",
+        "customer_id": "DEMO-C008",
+        "product": "Everyday Checking",
+        "available_balance_usd": 1456.93,
+        "status": "ACTIVE",
+        "classification": "CONFIDENTIAL"
+      }
+    ],
+    "Transactions": [
+      {
+        "transaction_id": "DEMO-T001",
+        "account_id": "DEMO-A001",
+        "posted_date": "2026-10-12T00:00:00.000Z",
+        "merchant": "Demo Market",
+        "amount_usd": -86.42,
+        "currency": "USD",
+        "classification": "CONFIDENTIAL"
+      },
+      {
+        "transaction_id": "DEMO-T002",
+        "account_id": "DEMO-A001",
+        "posted_date": "2026-10-13T00:00:00.000Z",
+        "merchant": "Demo Payroll",
+        "amount_usd": 2400,
+        "currency": "USD",
+        "classification": "CONFIDENTIAL"
+      },
+      {
+        "transaction_id": "DEMO-T003",
+        "account_id": "DEMO-A001",
+        "posted_date": "2026-10-14T00:00:00.000Z",
+        "merchant": "Demo Transit",
+        "amount_usd": -24.75,
+        "currency": "USD",
+        "classification": "CONFIDENTIAL"
+      },
+      {
+        "transaction_id": "DEMO-T004",
+        "account_id": "DEMO-A002",
+        "posted_date": "2026-10-12T00:00:00.000Z",
+        "merchant": "Demo Market",
+        "amount_usd": -87.55,
+        "currency": "USD",
+        "classification": "CONFIDENTIAL"
+      },
+      {
+        "transaction_id": "DEMO-T005",
+        "account_id": "DEMO-A002",
+        "posted_date": "2026-10-13T00:00:00.000Z",
+        "merchant": "Demo Payroll",
+        "amount_usd": 2437,
+        "currency": "USD",
+        "classification": "CONFIDENTIAL"
+      },
+      {
+        "transaction_id": "DEMO-T006",
+        "account_id": "DEMO-A002",
+        "posted_date": "2026-10-14T00:00:00.000Z",
+        "merchant": "Demo Transit",
+        "amount_usd": -25.88,
+        "currency": "USD",
+        "classification": "CONFIDENTIAL"
+      },
+      {
+        "transaction_id": "DEMO-T007",
+        "account_id": "DEMO-A003",
+        "posted_date": "2026-10-12T00:00:00.000Z",
+        "merchant": "Demo Market",
+        "amount_usd": -88.68,
+        "currency": "USD",
+        "classification": "CONFIDENTIAL"
+      },
+      {
+        "transaction_id": "DEMO-T008",
+        "account_id": "DEMO-A003",
+        "posted_date": "2026-10-13T00:00:00.000Z",
+        "merchant": "Demo Payroll",
+        "amount_usd": 2474,
+        "currency": "USD",
+        "classification": "CONFIDENTIAL"
+      },
+      {
+        "transaction_id": "DEMO-T009",
+        "account_id": "DEMO-A003",
+        "posted_date": "2026-10-14T00:00:00.000Z",
+        "merchant": "Demo Transit",
+        "amount_usd": -27.01,
+        "currency": "USD",
+        "classification": "CONFIDENTIAL"
+      },
+      {
+        "transaction_id": "DEMO-T010",
+        "account_id": "DEMO-A004",
+        "posted_date": "2026-10-12T00:00:00.000Z",
+        "merchant": "Demo Market",
+        "amount_usd": -89.81,
+        "currency": "USD",
+        "classification": "CONFIDENTIAL"
+      },
+      {
+        "transaction_id": "DEMO-T011",
+        "account_id": "DEMO-A004",
+        "posted_date": "2026-10-13T00:00:00.000Z",
+        "merchant": "Demo Payroll",
+        "amount_usd": 2511,
+        "currency": "USD",
+        "classification": "CONFIDENTIAL"
+      },
+      {
+        "transaction_id": "DEMO-T012",
+        "account_id": "DEMO-A004",
+        "posted_date": "2026-10-14T00:00:00.000Z",
+        "merchant": "Demo Transit",
+        "amount_usd": -28.14,
+        "currency": "USD",
+        "classification": "CONFIDENTIAL"
+      },
+      {
+        "transaction_id": "DEMO-T013",
+        "account_id": "DEMO-A005",
+        "posted_date": "2026-10-12T00:00:00.000Z",
+        "merchant": "Demo Market",
+        "amount_usd": -90.94,
+        "currency": "USD",
+        "classification": "CONFIDENTIAL"
+      },
+      {
+        "transaction_id": "DEMO-T014",
+        "account_id": "DEMO-A005",
+        "posted_date": "2026-10-13T00:00:00.000Z",
+        "merchant": "Demo Payroll",
+        "amount_usd": 2548,
+        "currency": "USD",
+        "classification": "CONFIDENTIAL"
+      },
+      {
+        "transaction_id": "DEMO-T015",
+        "account_id": "DEMO-A005",
+        "posted_date": "2026-10-14T00:00:00.000Z",
+        "merchant": "Demo Transit",
+        "amount_usd": -29.27,
+        "currency": "USD",
+        "classification": "CONFIDENTIAL"
+      },
+      {
+        "transaction_id": "DEMO-T016",
+        "account_id": "DEMO-A006",
+        "posted_date": "2026-10-12T00:00:00.000Z",
+        "merchant": "Demo Market",
+        "amount_usd": -92.07,
+        "currency": "USD",
+        "classification": "CONFIDENTIAL"
+      },
+      {
+        "transaction_id": "DEMO-T017",
+        "account_id": "DEMO-A006",
+        "posted_date": "2026-10-13T00:00:00.000Z",
+        "merchant": "Demo Payroll",
+        "amount_usd": 2585,
+        "currency": "USD",
+        "classification": "CONFIDENTIAL"
+      },
+      {
+        "transaction_id": "DEMO-T018",
+        "account_id": "DEMO-A006",
+        "posted_date": "2026-10-14T00:00:00.000Z",
+        "merchant": "Demo Transit",
+        "amount_usd": -30.4,
+        "currency": "USD",
+        "classification": "CONFIDENTIAL"
+      },
+      {
+        "transaction_id": "DEMO-T019",
+        "account_id": "DEMO-A007",
+        "posted_date": "2026-10-12T00:00:00.000Z",
+        "merchant": "Demo Market",
+        "amount_usd": -93.2,
+        "currency": "USD",
+        "classification": "CONFIDENTIAL"
+      },
+      {
+        "transaction_id": "DEMO-T020",
+        "account_id": "DEMO-A007",
+        "posted_date": "2026-10-13T00:00:00.000Z",
+        "merchant": "Demo Payroll",
+        "amount_usd": 2622,
+        "currency": "USD",
+        "classification": "CONFIDENTIAL"
+      },
+      {
+        "transaction_id": "DEMO-T021",
+        "account_id": "DEMO-A007",
+        "posted_date": "2026-10-14T00:00:00.000Z",
+        "merchant": "Demo Transit",
+        "amount_usd": -31.53,
+        "currency": "USD",
+        "classification": "CONFIDENTIAL"
+      },
+      {
+        "transaction_id": "DEMO-T022",
+        "account_id": "DEMO-A008",
+        "posted_date": "2026-10-12T00:00:00.000Z",
+        "merchant": "Demo Market",
+        "amount_usd": -94.33,
+        "currency": "USD",
+        "classification": "CONFIDENTIAL"
+      },
+      {
+        "transaction_id": "DEMO-T023",
+        "account_id": "DEMO-A008",
+        "posted_date": "2026-10-13T00:00:00.000Z",
+        "merchant": "Demo Payroll",
+        "amount_usd": 2659,
+        "currency": "USD",
+        "classification": "CONFIDENTIAL"
+      },
+      {
+        "transaction_id": "DEMO-T024",
+        "account_id": "DEMO-A008",
+        "posted_date": "2026-10-14T00:00:00.000Z",
+        "merchant": "Demo Transit",
+        "amount_usd": -32.66,
+        "currency": "USD",
+        "classification": "CONFIDENTIAL"
+      },
+      {
+        "transaction_id": "DEMO-T025",
+        "account_id": "DEMO-A009",
+        "posted_date": "2026-10-12T00:00:00.000Z",
+        "merchant": "Demo Market",
+        "amount_usd": -95.46,
+        "currency": "USD",
+        "classification": "CONFIDENTIAL"
+      },
+      {
+        "transaction_id": "DEMO-T026",
+        "account_id": "DEMO-A009",
+        "posted_date": "2026-10-13T00:00:00.000Z",
+        "merchant": "Demo Payroll",
+        "amount_usd": 2696,
+        "currency": "USD",
+        "classification": "CONFIDENTIAL"
+      },
+      {
+        "transaction_id": "DEMO-T027",
+        "account_id": "DEMO-A009",
+        "posted_date": "2026-10-14T00:00:00.000Z",
+        "merchant": "Demo Transit",
+        "amount_usd": -33.79,
+        "currency": "USD",
+        "classification": "CONFIDENTIAL"
+      },
+      {
+        "transaction_id": "DEMO-T028",
+        "account_id": "DEMO-A010",
+        "posted_date": "2026-10-12T00:00:00.000Z",
+        "merchant": "Demo Market",
+        "amount_usd": -96.59,
+        "currency": "USD",
+        "classification": "CONFIDENTIAL"
+      },
+      {
+        "transaction_id": "DEMO-T029",
+        "account_id": "DEMO-A010",
+        "posted_date": "2026-10-13T00:00:00.000Z",
+        "merchant": "Demo Payroll",
+        "amount_usd": 2733,
+        "currency": "USD",
+        "classification": "CONFIDENTIAL"
+      },
+      {
+        "transaction_id": "DEMO-T030",
+        "account_id": "DEMO-A010",
+        "posted_date": "2026-10-14T00:00:00.000Z",
+        "merchant": "Demo Transit",
+        "amount_usd": -34.92,
+        "currency": "USD",
+        "classification": "CONFIDENTIAL"
+      }
+    ]
+  }
+}

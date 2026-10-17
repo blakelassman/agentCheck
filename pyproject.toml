@@ -1,0 +1,17 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "agentcheck-workbench"
+version = "0.1.0"
+description = "Evidence-first comparison of two bank assistants"
+requires-python = ">=3.10"
+dependencies = []
+license = {text = "GPL-3.0-only"}
+
+[tool.setuptools.packages.find]
+include = ["agentcheck*"]
+
+[tool.setuptools.package-data]
+agentcheck = ["web/*"]
