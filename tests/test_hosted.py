@@ -100,6 +100,23 @@ class HostedTests(unittest.TestCase):
         self.assertEqual(len(self.transport.calls),count)
         with self.assertRaises(ValueError):execute_stage(owner,session['id'],'stale-job','case:1',store=self.store,client=self.transport)
 
+    def test_status_lookup_failure_does_not_hide_saved_progress(self):
+        async def queue_only(fn,owner,session_id,job_id,operation):
+            return type('Run',(),{'run_id':'old-preview-run'})()
+        browser=TestClient(create_app(store=self.store,start_workflow=queue_only,client=self.transport))
+        bootstrap=browser.get('/api/studio/bootstrap').json()
+        response=browser.post('/api/studio/demo',json={},headers={'X-AgentCheck-Token':bootstrap['token']})
+        self.assertEqual(response.status_code,200)
+        session_id=response.json()['id']
+        class UnavailableRun:
+            def __init__(self,*args):pass
+            async def status(self):raise RuntimeError('Run belongs to another deployment environment.')
+        with patch('agentcheck.hosted.workflow.Run',UnavailableRun):
+            result=browser.get('/api/studio/session/'+session_id)
+        self.assertEqual(result.status_code,200)
+        self.assertEqual(result.json()['state'],'scanning')
+        browser.close()
+
     def test_workflow_module_imports_inside_the_real_sdk_sandbox(self):
         import importlib
         from agentcheck.hosted_jobs import wf

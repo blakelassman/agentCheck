@@ -218,6 +218,8 @@ class Studio:
         session.setdefault("provider_calls", []).append({"purpose": purpose, "version": version, "model": client.model, "mock": client.is_mock, "at": now()})
         if session["versions"][-1]["scan"]["status"] == "running":
             session["versions"][-1]["scan"]["calls"] += 1
+        session["progress"] = {"purpose": purpose, "started_at": now()}
+        self._save(session)
         reply = client.generate(instructions, json.dumps(payload, ensure_ascii=False), purpose=purpose, version=version, json_output=json_output)
         return reply
 
@@ -328,6 +330,7 @@ class Studio:
         version = session["versions"][-1]
         version["scan"].update(status="completed", completed_at=now())
         session["state"] = "ready"
+        session["progress"] = None
         session["events"].append({"type": "scan_completed", "version": version["number"], "at": now()})
         self._save(session)
 

@@ -31,7 +31,10 @@ function render(){
   $('step-upload').classList.remove('active');$('step-scan').classList.toggle('active',active());$('step-decide').classList.toggle('active',!active());
   $('progress-panel').hidden=!active();
   $('progress-title').textContent=session.state==='refining'?'Refining instructions from your feedback…':'Running the test suite…';
-  $('progress-description').textContent=session.state==='refining'?'The new version will automatically run the same tests.':`${latest.scan.results.length} of ${session.cases.length||6} cases recorded. Each test uses a fresh conversation.`;
+  const phases={candidate:'Waiting for the Gemini agent response',judge:'Evaluating the response with Gemini',plan:'Generating the test plan',refine:'Refining the instructions'};
+  const phase=phases[session.progress?.purpose]||'Preparing the next test';
+  const elapsed=session.progress?.started_at?Math.max(0,Math.floor((Date.now()-Date.parse(session.progress.started_at))/1000)):0;
+  $('progress-description').textContent=`${phase}${elapsed?' · '+elapsed+'s':''}. ${latest.scan.results.length} of ${session.cases.length||6} cases recorded.`;
   $('stat-version').textContent=version.number;$('stat-pass').textContent=scan.summary.PASS||0;$('stat-fail').textContent=scan.summary.FAIL||0;
   $('stat-attention').textContent=(scan.summary.ERROR||0)+(scan.summary.REVIEW||0);$('stat-progress').textContent=`${scan.results.length} / ${session.cases.length||6}`;
   $('results-title').textContent=`Version ${version.number} test results`;$('version-state').textContent=(version.decision?.status||scan.status).replaceAll('_',' ').toUpperCase();

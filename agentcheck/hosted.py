@@ -90,7 +90,13 @@ def create_app(store=None, start_workflow=None, client=None):
         job = session.get('host_job', {})
         run_id = await asyncio.to_thread(store.get_run,studio.owner,session_id,job['id']) if job.get('id') else None
         if session['state'] in ('scanning','refining') and run_id:
-            status = await workflow.Run(run_id).status()
+            try:
+                status = await workflow.Run(run_id).status()
+            except Exception:
+                # A browser can follow an alias from Preview to Production while its
+                # run continues in Preview. Status lookups must not hide saved evidence.
+                logger.warning('Workflow status unavailable session=%s',session_id)
+                status = None
             if status in ('failed','cancelled'):
                 detail = 'The hosted scan stopped.'
                 try:
